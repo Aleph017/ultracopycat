@@ -1,0 +1,20 @@
+Net_int_size = 4
+Magic_word = "vim"
+Stop_word = ":wq"
+Force_exit_word = ":qa!"
+Events = {
+  KILL = 0,
+  FRIENDLYFIRE = 1,
+  EXPLOSION = 2,
+  HL3CONFIRMED = 3,
+  RAGDOLL = 4,
+  ANGRY = 5,
+  PROPPHYS = 6,
+  BETRAYAL = 7,
+  WORLDSPAWN = 8,
+  AFTERDEATH = 9,
+  CLOSEKILL = 10,
+  FARKILL = 11,
+  WILDWEST = 12,
+  SUICIDE = 13
+}

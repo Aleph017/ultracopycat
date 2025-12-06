@@ -1,16 +1,13 @@
 include("autorun/magic_stuff.lua")
 
 util.AddNetworkString("Connection")
-util.AddNetworkString("ToSendToClient")
+util.AddNetworkString("ScoreConnection")
 Player_table = player.GetAll()
 Weapons = {"weapon_pistol", "weapon_smg1", "weapon_shotgun", "weapon_357"} --cops weapon pool
+Score = {}
+Best_session_score = {}
 Cops_count = 0
 Cops_cap = 25
-
-for i, j in pairs(Player_table) do
-  j:ChatPrint("Got the list of players.")
-  j:ChatPrint("Greetings, " .. j:Nick() .. "!")
-end
 
 function Distance(ent0, ent1)
   local pos0 = ent0:GetPos()
@@ -22,6 +19,41 @@ function Distance(ent0, ent1)
   )
   return distance
 end
+
+function ScoreUpdate(ply, points)
+  if Score[ply:UserID()] then
+    Score[ply:UserID()] = Score[ply:UserID()] + points
+  end 
+end
+
+Handlers = {
+  ["weapon_crowbar"] = function(npc,attacker,inflictor)
+    local broadcast = false 
+    if attacker:IsPlayer() then 
+      return Events.HL3CONFIRMED, broadcast
+    end
+  end,
+  ["npc_grenade_frag"] = function(npc,attacker,inflictor)
+    local broadcast = false 
+    if attacker:IsPlayer() then 
+      return Events.EXPLOSION, broadcast
+    end
+  end,
+  ["prop_ragdoll"] = function(npc,attacker,inflictor)
+    local broadcast = true 
+    return Events.RAGDOLL, broadcast
+  end,
+  ["weapon_357"] = function(npc,attacker,inflictor)
+    local broadcast = false 
+    local dist = Distance(npc,attacker)
+    local npc_wep = npc:GetActiveWeapon():GetClass()
+    if dist < 480 and dist > 160 and npc_wep == "weapon_357" then
+      return Events.WILDWEST, broadcast 
+    else 
+      return Events.KILL, broadcast
+    end
+  end
+}
 
 function SpawnCops(areas)
   --print("Updating the player list")
@@ -69,10 +101,10 @@ function SpawnCops(areas)
   end
   if not timer.Exists("ChaseUpdate") then
     timer.Create("ChaseUpdate", 5, 0, function()
-      print("Updating the chase...")
+      if DEBUG then print("Updating the chase...") end
       local cops = ents.FindByClass("npc_metropolice")
       if next(cops) == nil then
-        print("All cops are dead, stopped updating the chase.")
+        if DEBUG then print("All cops are dead, stopped updating the chase.") end
         timer.Remove("ChaseUpdate")
         timer.Remove("GiveEmGrenades")
         return
@@ -84,19 +116,18 @@ function SpawnCops(areas)
         local enemy = npc:GetEnemy()
         if IsValid(enemy) then npc:SetLastPosition(enemy:GetPos()) end
         npc:SetSchedule(SCHED_CHASE_ENEMY)
-
         if not npc:IsInWorld() then
           if IsValid(enemy) then
             npc:SetPos(enemy:GetPos() + Vector(math.random(40,80), math.random(40,80),0))
           end
         end
-
       end
     end)
   end
 end
 
 function StartSpawning()
+  Player_table = player.GetAll()
   local areas = navmesh.GetAllNavAreas()
   if not timer.Exists("Spawner") then
     SpawnCops(areas)
@@ -106,13 +137,22 @@ function StartSpawning()
   end
 end
 
+hook.Add("PlayerInitialSpawn", "UpdateTheList", function()
+  Player_table = player.GetAll()
+  for i, ply in pairs(Player_table) do
+    ply:ChatPrint("A new bastard has connected")
+    if not Score[ply:UserID()] then
+      Score[ply:UserID()] = 0
+    end
+  end
+end)
+
 hook.Add("PlayerSay","SpawnStuff", function(ply, text)
   if string.lower(text) == Magic_word then
     for i, ply in pairs(Player_table) do
       ply:Give("weapon_crowbar")
     end
     StartSpawning()
-
     timer.Create("GiveEmGrenades", 15, 0, function() --each 15 seconds give every player grenades until they have at least 3
       for i, ply in pairs(Player_table) do
         ply:Give("weapon_frag")
@@ -122,7 +162,6 @@ hook.Add("PlayerSay","SpawnStuff", function(ply, text)
         end
       end
     end)
-
   --stop gently
   elseif text == Stop_word and timer.Exists("Spawner") then
     timer.Remove("Spawner")
@@ -134,7 +173,6 @@ hook.Add("PlayerSay","SpawnStuff", function(ply, text)
         npc:Remove()
       end
     end
-
     --stop all timers
     if timer.Exists("Spawner") then timer.Remove("Spawner") end
     if timer.Exists("ChaseUpdate") then timer.Remove("ChaseUpdate") end
@@ -145,6 +183,15 @@ end)
 
 hook.Add("PlayerSpawn", "GiveEmACrowbar", function(ply, transiton)
   ply:Give("weapon_crowbar")
+  if Score[ply:UserID()] then
+    net.Start("ScoreConnection")
+    net.WriteInt(Score[ply:UserID()], Net_score_size)
+    net.Send(ply)
+    Score[ply:UserID()] = 0
+    if DEBUG then 
+      print("Sent stuff(" .. Score[ply:UserID()] .. ") to player " .. ply:UserID()) 
+    end
+  end
 end)
 
 hook.Add("OnNPCKilled", "DeathHandler", function (npc,attacker,inflictor)
@@ -155,11 +202,13 @@ hook.Add("OnNPCKilled", "DeathHandler", function (npc,attacker,inflictor)
     -- angry section
     -- send angry style bonus to the client that killed a metrocop if they have 20 or less hp and alive
     if attacker:IsPlayer() and attacker:Health() <= 20 and attacker:Alive() then
+      ScoreUpdate(attacker, Values[Events.ANGRY])
       net.Start("Connection")
       net.WriteUInt(Events.ANGRY, Net_int_size)
       net.Send(attacker)
     -- send schroedinger's style bonus if the client killed a metrocop while it was dead
     elseif attacker:IsPlayer() and not attacker:Alive() then
+      ScoreUpdate(attacker, Values[Events.AFTERDEATH])
       net.Start("Connection")
       net.WriteUInt(Events.AFTERDEATH, Net_int_size)
       net.Send(attacker)
@@ -168,48 +217,35 @@ hook.Add("OnNPCKilled", "DeathHandler", function (npc,attacker,inflictor)
     -- weapon section
     -- select one style bonus depending on what was used to kill
     -- default to +KILL
-    if inflictor:GetClass() == "weapon_crowbar" then
-      if attacker:IsPlayer() then
-        net.Start("Connection")
-        net.WriteUInt(Events.HL3CONFIRMED, Net_int_size)
-        net.Send(attacker)
-      end
-    elseif inflictor:GetClass() == "npc_grenade_frag" then
-      if attacker:IsPlayer() then
-        net.Start("Connection")
-        net.WriteUInt(Events.EXPLOSION, Net_int_size)
-        net.Send(attacker)
-      end
-    elseif attacker:GetClass() == "prop_ragdoll" then
-      net.Start("Connection")
-      net.WriteUInt(Events.RAGDOLL, Net_int_size)
-      net.Broadcast()
-    elseif inflictor:GetClass() == "weapon_physgun" then
-      if attacker:IsPlayer() then
-        net.Start("Connection")
-        net.WriteUInt(Events.PROPPHYS, Net_int_size)
-        net.Send(attacker)
-      end
-    elseif inflictor:GetClass() == "weapon_357" and npc:GetActiveWeapon():GetClass() == "weapon_357" then
-      local dist = Distance(attacker,npc)
-      if dist < 480 and dist > 160  then
-        if attacker:IsPlayer() then
-          net.Start("Connection")
-          net.WriteUInt(Events.WILDWEST, Net_int_size)
-          net.Send(attacker)
+    local weapon_class = inflictor:GetClass()
+    local handler = Handlers[weapon_class]
+    if handler then
+      local event, broadcast = handler(npc,attacker,inflictor)
+      if event and attacker:IsPlayer() then
+        if broadcast then
+          for i, ply in pairs(Player_table) do
+            ScoreUpdate(ply, Values[event])
+          end
+        else
+          if attacker:IsPlayer() then --one little verbose if statement is never too bad 
+            ScoreUpdate(attacker, Values[event])
+          end
         end
-      else --this section is janky but i haven't come up with any other way to handle this, otherwise it doesn't send a signal at all.
-        if attacker:IsPlayer() then
-          net.Start("Connection")
-          net.WriteUInt(Events.KILL, Net_int_size)
-          net.Send(attacker)
+        net.Start("Connection")
+        net.WriteUInt(event, Net_int_size)
+        if broadcast then 
+          net.Broadcast() 
+        else 
+          net.Send(attacker) 
         end
       end
-    elseif attacker:IsPlayer() then
+    -- if no weapon specific handler found default to +KILL
+    elseif attacker:IsPlayer() then 
+      ScoreUpdate(attacker, Values[Events.KILL])
       net.Start("Connection")
       net.WriteUInt(Events.KILL, Net_int_size)
       net.Send(attacker)
-    end
+    end    
 
     --distance section
     --send Events.CLOSEKILL if distance < 80 h units (2m) and the weapon isn't crowbar
@@ -217,10 +253,12 @@ hook.Add("OnNPCKilled", "DeathHandler", function (npc,attacker,inflictor)
     --send only if a player killed a cop
     if attacker:IsPlayer() then
       if Distance(attacker, npc) < 80 and inflictor:GetClass() != "weapon_crowbar" then
+        ScoreUpdate(attacker, Values[Events.CLOSEKILL])
         net.Start("Connection")
         net.WriteUInt(Events.CLOSEKILL, Net_int_size)
         net.Send(attacker)
       elseif Distance(attacker,npc) > 480 and inflictor:GetClass() != "npc_grenade_frag" then 
+        ScoreUpdate(attacker, Values[Events.FARKILL])
         net.Start("Connection")
         net.WriteUInt(Events.FARKILL, Net_int_size)
         net.Send(attacker)
@@ -230,6 +268,9 @@ hook.Add("OnNPCKilled", "DeathHandler", function (npc,attacker,inflictor)
     -- friendly fire section
     -- send to all clients "+FRIENDLY FIRE" style bonus if a metrocop was killed by another metrocop
     if attacker:GetClass() == "npc_metropolice" then
+      for i, ply in pairs(Player_table) do
+        ScoreUpdate(ply, Values[Events.FRIENDLYFIRE])
+      end
       net.Start("Connection")
       net.WriteUInt(Events.FRIENDLYFIRE, Net_int_size)
       net.Broadcast()
@@ -242,16 +283,19 @@ hook.Add("PlayerDeath", "PlayerDeathHandler", function(victim,inflictor,attacker
   --print(victim:GetClass(),inflictor:GetClass(),attacker:GetClass())
   if attacker:IsPlayer() then 
     if attacker != victim then
+      ScoreUpdate(attacker, Values[Events.BETRAYAL])
       net.Start("Connection")
       net.WriteUInt(Events.BETRAYAL, Net_int_size)
       net.Send(attacker)
     else
+      ScoreUpdate(attacker, Values[Events.SUICIDE])
       net.Start("Connection")
       net.WriteUInt(Events.SUICIDE, Net_int_size)
       net.Send(attacker)
     end
   end
   if attacker:GetClass() == "worldspawn" then
+    ScoreUpdate(victim, Values[Events.WORLDSPAWN])
     net.Start("Connection")
     net.WriteUInt(Events.WORLDSPAWN, Net_int_size)
     net.Send(victim)

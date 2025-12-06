@@ -1,4 +1,6 @@
+DEBUG = true 
 Net_int_size = 4
+Net_score_size = 18
 Magic_word = "vim"
 Stop_word = ":wq"
 Force_exit_word = ":qa!"
@@ -17,4 +19,21 @@ Events = {
   FARKILL = 11,
   WILDWEST = 12,
   SUICIDE = 13
+}
+
+Values = {
+  [Events.KILL] = 100,
+  [Events.FRIENDLYFIRE] = 75,
+  [Events.EXPLOSION] = 100,
+  [Events.HL3CONFIRMED] = 333,
+  [Events.RAGDOLL] = 75,
+  [Events.ANGRY] = 125,
+  [Events.PROPPHYS] = nil,
+  [Events.BETRAYAL] = 125,
+  [Events.WORLDSPAWN] = -200,
+  [Events.AFTERDEATH] = 110,
+  [Events.CLOSEKILL] = 125,
+  [Events.FARKILL] = 225,
+  [Events.WILDWEST] = 250,
+  [Events.SUICIDE] = -10
 }

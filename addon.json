@@ -2,5 +2,5 @@
 "title" : "ULTRACOPYCAT",
 "type" : "ServerContent",
 "tags" : ["fun"],
-"ignore" : [".vscode"]
+"ignore" : [".vscode",".gitignore"]
 }

@@ -35,5 +35,5 @@ Values = {
   [Events.CLOSEKILL] = 125,
   [Events.FARKILL] = 225,
   [Events.WILDWEST] = 250,
-  [Events.SUICIDE] = -10
+  [Events.SUICIDE] = -50
 }

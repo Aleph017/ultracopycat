@@ -3,11 +3,21 @@ include("autorun/magic_stuff.lua")
 util.AddNetworkString("Connection")
 util.AddNetworkString("ScoreConnection")
 Player_table = player.GetAll()
-Weapons = {"weapon_pistol", "weapon_smg1", "weapon_shotgun", "weapon_357"} --cops weapon pool
+Lesser_Weapons = {"weapon_pistol", "weapon_smg1", "weapon_357"} --lesser cops weapon pool
+Greater_Weapons = {"weapon_shotgun", "weapon_ar2"} --greater cops weapon pool
+cops = {
+  ["npc_metropolice"] = true,
+  ["npc_combine_s"] = true
+}
+no_farkill = {
+  ["npc_grenade_frag"] = true,
+  ["prop_combine_ball"] = true
+}
 Score = {}
 Best_session_score = {}
 Cops_count = 0
 Cops_cap = 25
+Cops_killed = 0
 
 function Distance(ent0, ent1)
   local pos0 = ent0:GetPos()
@@ -52,6 +62,12 @@ Handlers = {
     else 
       return Events.KILL, broadcast
     end
+  end,
+  ["prop_combine_ball"] = function(npc,attacker,inflictor)
+    local broadcast = false 
+    if attacker:IsPlayer() then 
+      return Events.COMBINEBALL, broadcast 
+    end
   end
 }
 
@@ -71,12 +87,27 @@ function SpawnCops(areas)
       endpos = pos - Vector(0,0,2000),
       mask = MASK_SOLID_BRUSHONLY
     })
+    local threshold = math.random(1,4)
+    print(threshold)
 
-    local npc = ents.Create("npc_metropolice")
-    
+    local npc = nil --= ents.Create("npc_metropolice")
+    local is_lesser_cop = false
+    if threshold <= 2 then
+      npc = ents.Create("npc_metropolice")
+      is_lesser_cop = true 
+    elseif threshold == 3 then 
+      npc = ents.Create("npc_combine_s")
+    else
+      npc = ents.Create("npc_combine_s")
+      npc:SetModel("models/combine_super_soldier.mdl")
+    end
     npc:SetPos(tr.HitPos + Vector(0,0,10))
     npc:Spawn()
-    npc:Give(table.Random(Weapons))
+    if is_lesser_cop then 
+      npc:Give(table.Random(Lesser_Weapons))
+    else
+      npc:Give(table.Random(Greater_Weapons))
+    end
     --ai conditions that help the cops chase the player
     npc:SetCondition(COND.SEE_ENEMY)
     npc:SetCondition(COND.SEE_HATE)
@@ -140,7 +171,7 @@ end
 hook.Add("PlayerInitialSpawn", "UpdateTheList", function()
   Player_table = player.GetAll()
   for i, ply in pairs(Player_table) do
-    ply:ChatPrint("A new bastard has connected")
+    ply:ChatPrint("New connection")
     if not Score[ply:UserID()] then
       Score[ply:UserID()] = 0
     end
@@ -196,8 +227,21 @@ end)
 
 hook.Add("OnNPCKilled", "DeathHandler", function (npc,attacker,inflictor)
   --print(attacker:GetClass(), inflictor:GetClass()) --debug print
-  if npc:GetClass() == "npc_metropolice" then
+  if npc:GetClass() == "npc_antlionguard" and attacker:IsPlayer() then 
+    ScoreUpdate(attacker, Values[Events.ANTLION])
+    net.Start("Connection")
+    net.WriteUInt(Events.ANTLION, Net_int_size)
+    net.Send(attacker)
+  elseif cops[npc:GetClass()] then
+    local threshold = 8
+    local medkit = math.random(0,threshold)
+    if medkit == threshold then
+     local ent = ents.Create("item_healthvial") 
+     ent:SetPos(npc:GetPos())
+     ent:Spawn()
+    end
     Cops_count = Cops_count-1
+    Cops_killed = Cops_killed + 1
 
     -- angry section
     -- send angry style bonus to the client that killed a metrocop if they have 20 or less hp and alive
@@ -257,7 +301,7 @@ hook.Add("OnNPCKilled", "DeathHandler", function (npc,attacker,inflictor)
         net.Start("Connection")
         net.WriteUInt(Events.CLOSEKILL, Net_int_size)
         net.Send(attacker)
-      elseif Distance(attacker,npc) > 480 and inflictor:GetClass() != "npc_grenade_frag" then 
+      elseif Distance(attacker,npc) > 480 and not no_farkill[inflictor:GetClass()] then 
         ScoreUpdate(attacker, Values[Events.FARKILL])
         net.Start("Connection")
         net.WriteUInt(Events.FARKILL, Net_int_size)
@@ -276,6 +320,28 @@ hook.Add("OnNPCKilled", "DeathHandler", function (npc,attacker,inflictor)
       net.Broadcast()
     end
   end
+  if Cops_killed % 333 == 0 then 
+    --print("should spawn antlion")
+    if timer.Exists("Spawner") then timer.Remove("Spawner") end
+    if timer.Exists("ChaseUpdate") then timer.Remove("ChaseUpdate") end
+    
+    local antlion = ents.Create("npc_antlionguard")
+    local areas = navmesh.GetAllNavAreas()
+    local area = table.Random(areas)
+    while area:IsUnderwater() do
+      area = table.Random(areas)
+    end
+    local pos = area:GetRandomPoint()
+    --find out if the random point is good
+    local tr = util.TraceLine({
+      start = pos + Vector(0,0,100),
+      endpos = pos - Vector(0,0,2000),
+      mask = MASK_SOLID_BRUSHONLY
+    })
+    antlion:SetPos(tr.HitPos + Vector(0,0,10))
+    antlion:Spawn()
+    --print("spawned antlion")
+  end 
 end)
 
 -- Player death handling

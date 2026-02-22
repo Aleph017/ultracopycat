@@ -46,19 +46,21 @@ Colors = {
 }
 
 Styles = {
-  [Events.KILL] = {clr = Colors.WHITE, str = "+KILL"},
-  [Events.EXPLOSION] = { clr = Colors.WHITE, str = "+FIREWORKS"},
-  [Events.FRIENDLYFIRE] = {clr = Colors.GREEN, str = "+FRIENDLYFIRE"},
-  [Events.HL3CONFIRMED] = {clr = Colors.ORANGE, str = "+HL3 CONFIRMED"},
-  [Events.RAGDOLL] = {clr = Colors.GREEN, str = "+SMELLS LIKE VERDUN"},
-  [Events.ANGRY] = {clr = Colors.RED, str = "+TOO ANGRY TO DIE"},
-  [Events.WORLDSPAWN] = {clr = Colors.PURPLE, str = "-MR. NEWTON SENDS HIS REGARDS"},
-  [Events.BETRAYAL] = {clr = Colors.PURPLE, str = "+BETRAYAL"},
-  [Events.AFTERDEATH] = {clr = Colors.RED, str = "+SCHRÖDINGER'S KILL"},
-  [Events.CLOSEKILL] = {clr = Colors.BLUE, str = "+BETTER SAFE THAN SORRY"},
-  [Events.FARKILL] = {clr = Colors.BLUE, str = "+SHARPSHOOTER"},
-  [Events.WILDWEST] = {clr = Colors.BLUE, str = "+THE WILD WEST"},
-  [Events.SUICIDE] = {clr = Colors.PURPLE, str = "-STOP HITTING YOURSELF"}
+  [Events.KILL] = {clr = Colors.WHITE, str = "+KILL"}, --kill a cop
+  [Events.EXPLOSION] = { clr = Colors.WHITE, str = "+FIREWORKS"}, --kill a cop with a grenade
+  [Events.FRIENDLYFIRE] = {clr = Colors.GREEN, str = "+FRIENDLYFIRE"}, --witness a cop kill a cop
+  [Events.HL3CONFIRMED] = {clr = Colors.ORANGE, str = "+HL3 CONFIRMED"}, --kill a cop with the crowbar
+  [Events.RAGDOLL] = {clr = Colors.GREEN, str = "+SMELLS LIKE VERDUN"}, --witness a cop be killed by a ragdoll
+  [Events.ANGRY] = {clr = Colors.RED, str = "+TOO ANGRY TO DIE"}, --kill while hp <= 20 and alive
+  [Events.WORLDSPAWN] = {clr = Colors.PURPLE, str = "-MR. NEWTON SENDS HIS REGARDS"}, --die to fall damage
+  [Events.BETRAYAL] = {clr = Colors.PURPLE, str = "+BETRAYAL"}, --kill a player
+  [Events.AFTERDEATH] = {clr = Colors.RED, str = "+SCHRÖDINGER'S KILL"}, --kill a cop while dead
+  [Events.CLOSEKILL] = {clr = Colors.BLUE, str = "+BETTER SAFE THAN SORRY"}, --kill at distance < 2m not with the crowbar
+  [Events.FARKILL] = {clr = Colors.BLUE, str = "+SHARPSHOOTER"}, --kill at distance > 12m not with a grenade
+  [Events.WILDWEST] = {clr = Colors.BLUE, str = "+THE WILD WEST"}, --kill a cop wielding a revolver with a revolver at a distance
+  [Events.SUICIDE] = {clr = Colors.PURPLE, str = "-STOP HITTING YOURSELF"}, --kys
+  [Events.COMBINEBALL] = {clr = Colors.WHITE, str = "+BIG BANG THEORY"}, --kill a cop with a combine ball
+  [Events.ANTLION] = {clr = Colors.BLUE, str = "+PEST CONTROL"} --kill an antlion guard
 }
 
 net.Receive("Connection", function(length)

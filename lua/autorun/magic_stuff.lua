@@ -1,4 +1,4 @@
-DEBUG = true 
+DEBUG = true
 Net_int_size = 4
 Net_score_size = 18
 Magic_word = "vim"
@@ -18,7 +18,9 @@ Events = {
   CLOSEKILL = 10,
   FARKILL = 11,
   WILDWEST = 12,
-  SUICIDE = 13
+  SUICIDE = 13,
+  COMBINEBALL = 14,
+  ANTLION = 15
 }
 
 Values = {
@@ -35,5 +37,7 @@ Values = {
   [Events.CLOSEKILL] = 125,
   [Events.FARKILL] = 225,
   [Events.WILDWEST] = 250,
-  [Events.SUICIDE] = -50
+  [Events.SUICIDE] = -50,
+  [Events.COMBINEBALL] = 90,
+  [Events.ANTLION] = 500
 }

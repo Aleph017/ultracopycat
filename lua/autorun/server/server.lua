@@ -74,6 +74,8 @@ Handlers = {
 function SpawnCops(areas)
   --print("Updating the player list")
   Player_table = player.GetAll()
+  local enemy = table.Random(Player_table)
+  plypos = enemy:GetPos()
   --print("Spawning " .. Cops_cap - Cops_count .. " cops.")
   while Cops_count < Cops_cap do
     local area = table.Random(areas)
@@ -87,8 +89,13 @@ function SpawnCops(areas)
       endpos = pos - Vector(0,0,2000),
       mask = MASK_SOLID_BRUSHONLY
     })
+    local nava = navmesh.GetNearestNavArea(tr.HitPos)
+    local navb = navmesh.GetNearestNavArea(plypos)
+    if not nava:IsConnected(navb) then
+      continue
+    end
     local threshold = math.random(1,4)
-    print(threshold)
+--    print(threshold)
 
     local npc = nil --= ents.Create("npc_metropolice")
     local is_lesser_cop = false
@@ -116,7 +123,6 @@ function SpawnCops(areas)
     for i, ply in ipairs(Player_table) do
       npc:AddEntityRelationship(ply, D_HT, 99)
     end
-    local enemy = table.Random(Player_table)
     npc:SetEnemy(enemy)
     npc:SetLastPosition(enemy:GetPos())
     npc:SetSchedule(SCHED_CHASE_ENEMY)
@@ -134,6 +140,8 @@ function SpawnCops(areas)
     timer.Create("ChaseUpdate", 5, 0, function()
       if DEBUG then print("Updating the chase...") end
       local cops = ents.FindByClass("npc_metropolice")
+      local sldr = ents.FindByClass("npc_combine_s") 
+      table.Add(cops,sldr)
       if next(cops) == nil then
         if DEBUG then print("All cops are dead, stopped updating the chase.") end
         timer.Remove("ChaseUpdate")
@@ -199,6 +207,8 @@ hook.Add("PlayerSay","SpawnStuff", function(ply, text)
   --stop forced
   elseif text == Force_exit_word then
     local cops = ents.FindByClass("npc_metropolice")
+    local sldr = ents.FindByClass("npc_combine_s")
+    table.Add(cops,sldr)
     if next(cops) != nil then -- remove all cops if there are any
       for i, npc in ipairs(cops) do
         npc:Remove()
@@ -311,7 +321,7 @@ hook.Add("OnNPCKilled", "DeathHandler", function (npc,attacker,inflictor)
 
     -- friendly fire section
     -- send to all clients "+FRIENDLY FIRE" style bonus if a metrocop was killed by another metrocop
-    if attacker:GetClass() == "npc_metropolice" then
+    if cops[attacker:GetClass()] then
       for i, ply in pairs(Player_table) do
         ScoreUpdate(ply, Values[Events.FRIENDLYFIRE])
       end
@@ -320,7 +330,7 @@ hook.Add("OnNPCKilled", "DeathHandler", function (npc,attacker,inflictor)
       net.Broadcast()
     end
   end
-  if Cops_killed % 333 == 0 then 
+  if Cops_killed and Cops_killed % 333 == 0 then 
     --print("should spawn antlion")
     if timer.Exists("Spawner") then timer.Remove("Spawner") end
     if timer.Exists("ChaseUpdate") then timer.Remove("ChaseUpdate") end
@@ -334,10 +344,11 @@ hook.Add("OnNPCKilled", "DeathHandler", function (npc,attacker,inflictor)
     local pos = area:GetRandomPoint()
     --find out if the random point is good
     local tr = util.TraceLine({
-      start = pos + Vector(0,0,100),
-      endpos = pos - Vector(0,0,2000),
+      start = pos + Vector(0,0,50),
+      endpos = pos - Vector(0,0,1000),
       mask = MASK_SOLID_BRUSHONLY
     })
+
     antlion:SetPos(tr.HitPos + Vector(0,0,10))
     antlion:Spawn()
     --print("spawned antlion")

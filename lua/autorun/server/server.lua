@@ -330,7 +330,7 @@ hook.Add("OnNPCKilled", "DeathHandler", function (npc,attacker,inflictor)
       net.Broadcast()
     end
   end
-  if Cops_killed and Cops_killed % 333 == 0 then 
+  if Cops_killed > 0 and Cops_killed % 333 == 0 then 
     --print("should spawn antlion")
     if timer.Exists("Spawner") then timer.Remove("Spawner") end
     if timer.Exists("ChaseUpdate") then timer.Remove("ChaseUpdate") end

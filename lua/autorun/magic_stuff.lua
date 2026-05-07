@@ -1,4 +1,4 @@
-DEBUG = true 
+DEBUG = false 
 Net_int_size = 4
 Net_score_size = 18
 Magic_word = "vim"

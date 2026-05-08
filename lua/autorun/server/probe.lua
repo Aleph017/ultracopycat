@@ -1,10 +1,10 @@
 include("autorun/magic_stuff.lua")
 
 function ProbeNavmesh()
-  local area = navmesh.GetAllNavAreas()
-  if (#area < 1) then
-    return Statuscode.NAVMESH
-  else
+  local areas = navmesh.GetNavAreaCount()
+  if ( areas > 0) then
     return Statuscode.SUCCESS
+  else
+    return Statuscode.NAVMESH
   end
 end

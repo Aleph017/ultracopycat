@@ -24,7 +24,7 @@ Cops_killed = 0
 Navmesh_status = ProbeNavmesh()
 
 RequestHandlers = {
-  [Requests.NAVMESH] = function() return Navmesh_status end
+  [Requests.NAVMESH] = function() return ProbeNavmesh() end
 }
 
 net.Receive("RequestConnection", function(length,ply) 
@@ -106,6 +106,7 @@ function SpawnCops(areas)
       timer.Remove("Spawner")
       timer.Remove("GiveEmGrenades")
       timer.Remove("ChaseUpdate")
+      Navmesh_status = Statuscode.NAVMESH
       return
     end
 

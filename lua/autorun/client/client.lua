@@ -1,7 +1,7 @@
 include("autorun/magic_stuff.lua")
 
 First_time = true
-Navmesh_status = 0
+Navmesh_status = Statuscode.SUCCESS
 
 --chat.AddText(Color(255,255,255), "Hello, World!")
 
@@ -42,7 +42,7 @@ end
 
 hook.Add("OnPlayerChat","QuoteViolence", function(ply, text)
   if string.lower(text) == Magic_word then
-    if First_time then
+    if ( First_time or DEBUG) then
       RequestNavmeshStatus()
       print(Navmesh_status)
       timer.Simple(0.125, function ()

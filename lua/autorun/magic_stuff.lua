@@ -1,9 +1,12 @@
 DEBUG = false 
 Net_int_size = 4
 Net_score_size = 18
+Net_uccerr_size = 4
+Net_request_size = 4
 Magic_word = "vim"
 Stop_word = ":wq"
 Force_exit_word = ":qa!"
+Navmesh_not_found_msg = "Navmesh not found, aborting."
 Events = {
   KILL = 0,
   FRIENDLYFIRE = 1,
@@ -40,4 +43,13 @@ Values = {
   [Events.SUICIDE] = -50,
   [Events.COMBINEBALL] = 90,
   [Events.ANTLION] = 500
+}
+
+Requests = {
+  NAVMESH = 1
+}
+
+Statuscode = {
+  SUCCESS = 0,
+  NAVMESH = -1
 }

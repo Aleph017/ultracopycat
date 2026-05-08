@@ -1,8 +1,26 @@
 include("autorun/magic_stuff.lua")
 
 First_time = true
+Navmesh_status = 0
 
 --chat.AddText(Color(255,255,255), "Hello, World!")
+
+Messages = {
+  ["vim"] = true,
+  [":wq"] = true,
+  [":qa!"] = true
+}
+
+function RequestNavmeshStatus()
+  net.Start("RequestConnection")
+  net.WriteUInt(Requests.NAVMESH, Net_request_size)
+  net.SendToServer()
+
+  net.Receive("ErrorConnection", function(length) 
+    Navmesh_status = net.ReadInt(Net_uccerr_size)
+  end)
+end
+
 
 function ViolenceQuote()
   chat.AddText(
@@ -13,25 +31,52 @@ function ViolenceQuote()
   )
 end
 
+function InitialErrorMsg()
+  chat.AddText(
+    Color(255,255,255), "ULTRACOPYCAT couldn't find a navmesh for the map.\n",
+    "It means that the addon won't work. Try generating the mesh if you will,\n",
+    "or try another map."
+  )
+end
+
+
 hook.Add("OnPlayerChat","QuoteViolence", function(ply, text)
   if string.lower(text) == Magic_word then
     if First_time then
-      timer.Simple(0, function ()
-        ViolenceQuote()
+      RequestNavmeshStatus()
+      print(Navmesh_status)
+      timer.Simple(0.125, function ()
+        if (Navmesh_status == Statuscode.SUCCESS) then 
+          ViolenceQuote()
+        else
+          InitialErrorMsg()
+        end
         First_time = false
       end)
     else
       timer.Simple(0, function()
-        chat.AddText(Color(255,10,10), "H A V E  F U N .")
+        if (Navmesh_status == Statuscode.SUCCESS) then 
+          chat.AddText(Color(255,10,10), "H A V E  F U N .")
+        else 
+          chat.AddText(Color(0xff,0xff,0xff), Navmesh_not_found_msg)
+        end
       end)
     end
   elseif text == Stop_word then
     timer.Simple(0, function()
-      chat.AddText(Color(255,10,10), "I  W I L L  B E  W A I T I N G .")
+      if (Navmesh_status == Statuscode.SUCCESS) then
+        chat.AddText(Color(255,10,10), "I  W I L L  B E  W A I T I N G .")
+      else
+        return 
+      end
     end)
   elseif text == Force_exit_word then
     timer.Simple(0, function()
-      chat.AddText(Color(255,10,10), "D I S A P P O I N T I N G .")
+      if (Navmesh_status == Statuscode.SUCCESS) then 
+        chat.AddText(Color(255,10,10), "D I S A P P O I N T I N G .")
+      else 
+        return
+      end
     end)
   end
 end)

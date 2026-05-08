@@ -1,7 +1,10 @@
 include("autorun/magic_stuff.lua")
+include("autorun/server/probe.lua")
 
 util.AddNetworkString("Connection")
 util.AddNetworkString("ScoreConnection")
+util.AddNetworkString("ErrorConnection")
+util.AddNetworkString("RequestConnection")
 Player_table = player.GetAll()
 Lesser_Weapons = {"weapon_pistol", "weapon_smg1", "weapon_357"} --lesser cops weapon pool
 Greater_Weapons = {"weapon_shotgun", "weapon_ar2"} --greater cops weapon pool
@@ -18,6 +21,24 @@ Best_session_score = {}
 Cops_count = 0
 Cops_cap = 25
 Cops_killed = 0
+Navmesh_status = ProbeNavmesh()
+
+RequestHandlers = {
+  [Requests.NAVMESH] = function() return Navmesh_status end
+}
+
+net.Receive("RequestConnection", function(length,ply) 
+  local request = net.ReadUInt(Net_request_size)
+  print("Got a request: " .. request)
+  if (RequestHandlers[request]) then 
+    local func = RequestHandlers[request]
+    local response = func()
+    print("Going to answer with " .. response)
+    net.Start("ErrorConnection")
+    net.WriteInt(response, Net_uccerr_size)
+    net.Send(ply)
+  end
+end)
 
 function Distance(ent0, ent1)
   local pos0 = ent0:GetPos()
@@ -79,6 +100,15 @@ function SpawnCops(areas)
   --print("Spawning " .. Cops_cap - Cops_count .. " cops.")
   while Cops_count < Cops_cap do
     local area = table.Random(areas)
+
+    if (area == nil) then
+      print("No navmesh found, aborting.")
+      timer.Remove("Spawner")
+      timer.Remove("GiveEmGrenades")
+      timer.Remove("ChaseUpdate")
+      return
+    end
+
     if area:IsUnderwater() then
       continue
     end
@@ -91,6 +121,9 @@ function SpawnCops(areas)
     })
     local nava = navmesh.GetNearestNavArea(tr.HitPos)
     local navb = navmesh.GetNearestNavArea(plypos)
+    if (nava == nil or navb == nil) then
+      continue
+    end
     if not nava:IsConnected(navb) then
       continue
     end

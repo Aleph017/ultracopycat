@@ -1,5 +1,6 @@
 include("autorun/magic_stuff.lua")
 include("autorun/server/probe.lua")
+include("autorun/server/clean.lua")
 
 util.AddNetworkString("Connection")
 util.AddNetworkString("ScoreConnection")
@@ -253,6 +254,8 @@ hook.Add("PlayerSay","SpawnStuff", function(ply, text)
     if timer.Exists("ChaseUpdate") then timer.Remove("ChaseUpdate") end
     if timer.Exists("GiveEmGrenades") then timer.Remove("GiveEmGrenades") end
     Cops_count = 0 --reset cops count
+  elseif text == Cleanup_word then 
+    RemoveTrash()
   end
 end)
 

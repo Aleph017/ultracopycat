@@ -78,6 +78,12 @@ hook.Add("OnPlayerChat","QuoteViolence", function(ply, text)
         return
       end
     end)
+  elseif text == Cleanup_word then 
+    timer.Simple(0, function()
+      if (Navmesh_status == Statuscode.SUCCESS) then
+        chat.AddText(Color(0xff,0xa,0xa), "A V E R A G E  L O A D  T O O  H I G H ?")
+      end
+    end)
   end
 end)
 

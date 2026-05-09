@@ -6,6 +6,7 @@ Net_request_size = 4
 Magic_word = "vim"
 Stop_word = ":wq"
 Force_exit_word = ":qa!"
+Cleanup_word = ":%d"
 Navmesh_not_found_msg = "Navmesh not found, aborting."
 Events = {
   KILL = 0,

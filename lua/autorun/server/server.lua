@@ -6,6 +6,7 @@ util.AddNetworkString("Connection")
 util.AddNetworkString("ScoreConnection")
 util.AddNetworkString("ErrorConnection")
 util.AddNetworkString("RequestConnection")
+util.AddNetworkString("BoardConnection")
 Player_table = player.GetAll()
 Lesser_Weapons = {"weapon_pistol", "weapon_smg1", "weapon_357"} --lesser cops weapon pool
 Greater_Weapons = {"weapon_shotgun", "weapon_ar2"} --greater cops weapon pool
@@ -15,7 +16,8 @@ cops = {
 }
 no_farkill = {
   ["npc_grenade_frag"] = true,
-  ["prop_combine_ball"] = true
+  ["prop_combine_ball"] = true,
+  ["ultrakill_coin"] = true
 }
 Score = {}
 Best_session_score = {}
@@ -25,7 +27,13 @@ Cops_killed = 0
 Navmesh_status = ProbeNavmesh()
 
 RequestHandlers = {
-  [Requests.NAVMESH] = function() return ProbeNavmesh() end
+  [Requests.NAVMESH] = function(ply) return ProbeNavmesh() end,
+  [Requests.SCORE] = function(ply)
+    net.Start("BoardConnection")
+    net.WriteTable(Score)
+    net.Send(ply)
+    return Statuscode.SUCCESS
+  end
 }
 
 net.Receive("RequestConnection", function(length,ply) 
@@ -33,7 +41,7 @@ net.Receive("RequestConnection", function(length,ply)
   print("Got a request: " .. request)
   if (RequestHandlers[request]) then 
     local func = RequestHandlers[request]
-    local response = func()
+    local response = func(ply)
     print("Going to answer with " .. response)
     net.Start("ErrorConnection")
     net.WriteInt(response, Net_uccerr_size)
@@ -89,6 +97,12 @@ Handlers = {
     local broadcast = false 
     if attacker:IsPlayer() then 
       return Events.COMBINEBALL, broadcast 
+    end
+  end,
+  ["ultrakill_coin"] = function(npc,attacker,inflictor)
+    local broadcast = false 
+    if attacker:IsPlayer() then
+      return Events.COIN, broadcast
     end
   end
 }
@@ -385,8 +399,8 @@ hook.Add("OnNPCKilled", "DeathHandler", function (npc,attacker,inflictor)
       endpos = pos - Vector(0,0,1000),
       mask = MASK_SOLID_BRUSHONLY
     })
-
-    antlion:SetPos(tr.HitPos + Vector(0,0,10))
+    
+    antlion:SetPos(tr.HitPos + Vector(0,0,10))    
     antlion:Spawn()
     --print("spawned antlion")
   end 

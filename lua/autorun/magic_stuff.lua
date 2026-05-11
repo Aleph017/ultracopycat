@@ -1,5 +1,5 @@
 DEBUG = false 
-Net_int_size = 4
+Net_int_size = 5
 Net_score_size = 18
 Net_uccerr_size = 4
 Net_request_size = 4
@@ -7,6 +7,7 @@ Magic_word = "vim"
 Stop_word = ":wq"
 Force_exit_word = ":qa!"
 Cleanup_word = ":%d"
+Score_word = ":score"
 Navmesh_not_found_msg = "Navmesh not found, aborting."
 Events = {
   KILL = 0,
@@ -24,7 +25,8 @@ Events = {
   WILDWEST = 12,
   SUICIDE = 13,
   COMBINEBALL = 14,
-  ANTLION = 15
+  ANTLION = 15,
+  COIN = 16
 }
 
 Values = {
@@ -43,11 +45,13 @@ Values = {
   [Events.WILDWEST] = 250,
   [Events.SUICIDE] = -50,
   [Events.COMBINEBALL] = 90,
-  [Events.ANTLION] = 500
+  [Events.ANTLION] = 500,
+  [Events.COIN] = 150
 }
 
 Requests = {
-  NAVMESH = 1
+  NAVMESH = 1,
+  SCORE = 2
 }
 
 Statuscode = {

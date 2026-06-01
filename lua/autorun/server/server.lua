@@ -38,11 +38,11 @@ RequestHandlers = {
 
 net.Receive("RequestConnection", function(length,ply) 
   local request = net.ReadUInt(Net_request_size)
-  print("Got a request: " .. request)
+  --print("Got a request: " .. request)
   if (RequestHandlers[request]) then 
     local func = RequestHandlers[request]
     local response = func(ply)
-    print("Going to answer with " .. response)
+    --print("Going to answer with " .. response)
     net.Start("ErrorConnection")
     net.WriteInt(response, Net_uccerr_size)
     net.Send(ply)
@@ -214,6 +214,18 @@ function SpawnCops(areas)
   end
 end
 
+function GetMultiplier(attacker)
+  local vel = attacker:GetVelocity():LengthSqr()
+  local mult = 1 + (vel / 900^2)
+  if (vel <= 600^2) then
+    return 1
+  elseif (mult > 2) then
+    return 2
+  else 
+    return mult
+  end
+end
+
 function StartSpawning()
   Player_table = player.GetAll()
   local areas = navmesh.GetAllNavAreas()
@@ -333,7 +345,7 @@ hook.Add("OnNPCKilled", "DeathHandler", function (npc,attacker,inflictor)
           end
         else
           if attacker:IsPlayer() then --one little verbose if statement is never too bad 
-            ScoreUpdate(attacker, Values[event])
+            ScoreUpdate(attacker, math.Round(Values[event]*GetMultiplier(attacker)))
           end
         end
         net.Start("Connection")
@@ -346,7 +358,7 @@ hook.Add("OnNPCKilled", "DeathHandler", function (npc,attacker,inflictor)
       end
     -- if no weapon specific handler found default to +KILL
     elseif attacker:IsPlayer() then 
-      ScoreUpdate(attacker, Values[Events.KILL])
+      ScoreUpdate(attacker, math.Round(Values[Events.KILL]*GetMultiplier(attacker)))
       net.Start("Connection")
       net.WriteUInt(Events.KILL, Net_int_size)
       net.Send(attacker)

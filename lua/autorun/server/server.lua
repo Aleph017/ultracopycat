@@ -52,11 +52,7 @@ end)
 function Distance(ent0, ent1)
   local pos0 = ent0:GetPos()
   local pos1 = ent1:GetPos()
-  local distance = math.sqrt(
-    (pos0.x - pos1.x)^2 +
-    (pos0.y - pos1.y)^2 +
-    (pos0.z - pos1.z)^2
-  )
+  local distance = (pos0.x - pos1.x)^2 + (pos0.y - pos1.y)^2 + (pos0.z - pos1.z)^2
   return distance
 end
 
@@ -87,7 +83,7 @@ Handlers = {
     local broadcast = false 
     local dist = Distance(npc,attacker)
     local npc_wep = npc:GetActiveWeapon():GetClass()
-    if dist < 480 and dist > 160 and npc_wep == "weapon_357" then
+    if dist < 480^2 and dist > 160^2 and npc_wep == "weapon_357" then
       return Events.WILDWEST, broadcast 
     else 
       return Events.KILL, broadcast
@@ -369,12 +365,12 @@ hook.Add("OnNPCKilled", "DeathHandler", function (npc,attacker,inflictor)
     --send Events.FARKILL if distance > 480 h units (12m) and the weapon isn't greande
     --send only if a player killed a cop
     if attacker:IsPlayer() then
-      if Distance(attacker, npc) < 80 and inflictor:GetClass() != "weapon_crowbar" then
+      if Distance(attacker, npc) < 80^2 and inflictor:GetClass() != "weapon_crowbar" then
         ScoreUpdate(attacker, Values[Events.CLOSEKILL])
         net.Start("Connection")
         net.WriteUInt(Events.CLOSEKILL, Net_int_size)
         net.Send(attacker)
-      elseif Distance(attacker,npc) > 480 and not no_farkill[inflictor:GetClass()] then 
+      elseif Distance(attacker,npc) > 480^2 and not no_farkill[inflictor:GetClass()] then 
         ScoreUpdate(attacker, Values[Events.FARKILL])
         net.Start("Connection")
         net.WriteUInt(Events.FARKILL, Net_int_size)

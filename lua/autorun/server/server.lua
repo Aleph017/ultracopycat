@@ -437,3 +437,24 @@ hook.Add("PlayerDeath", "PlayerDeathHandler", function(victim,inflictor,attacker
     net.Send(victim)
   end
 end)
+
+concommand.Add("ucc_setcap", function(ply,cmd,args)
+  if(#args > 1) then
+    print("Too many arguments, aborted.")
+    return -1
+  elseif (#args == 0) then
+    print("Not enough arguments, aborted")
+    return -1
+  end
+  local newcap = tonumber(args[1])
+  if(newcap == nil) then
+    print("Invalid argument, aborted.")
+    return -1
+  elseif (not ply:IsAdmin()) then
+    print("Insufficient rights, aborted.")
+    return -1
+  end
+  Cops_cap = newcap
+  return 0
+end
+)
